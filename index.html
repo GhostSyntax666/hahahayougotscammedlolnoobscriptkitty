@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Doraemon's Place</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCa5jZ6xhQ-19jIa9Q_oR8ejXQ-JzGHtiM",
+      authDomain: "doraemonsplace.firebaseapp.com",
+      projectId: "doraemonsplace",
+      storageBucket: "doraemonsplace.appspot.com",
+      messagingSenderId: "1003411994841",
+      appId: "1:1003411994841:web:8bffe46a45c2cfd66026c8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const messagesRef = collection(db, "messages");
+    const announcementsRef = collection(db, "announcements");
+
+    const adminEmails = ["sumitansu@dsm.com"];
+
+    window.loginUser = async function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (e) {
+        alert("Login failed: " + e.message);
+      }
+    };
+
+    window.logoutUser = async function () {
+      await signOut(auth);
+    };
+
+    window.toggleSidebar = function () {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.style.display = (sidebar.style.display === "none" || !sidebar.style.display) ? "block" : "none";
+    };
+
+    window.showSection = function (section) {
+      document.getElementById("chatSection").style.display = section === "chat" ? "block" : "none";
+      document.getElementById("announcementsSection").style.display = section === "announcements" ? "block" : "none";
+    };
+
+    window.sendMessage = async function () {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+      await addDoc(messagesRef, {
+        sender: auth.currentUser.email,
+        text,
+        timestamp: serverTimestamp()
+      });
+      input.value = "";
+    };
+
+    window.uploadFile = async function () {
+      const fileInput = document.getElementById("fileInput");
+      const file = fileInput.files[0];
+      if (!file) return;
+      const storageRef = ref(storage, `files/${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await addDoc(messagesRef, {
+        sender: auth.currentUser.email,
+        text: `📎 <a href='${url}' target='_blank'>${file.name}</a>`,
+        timestamp: serverTimestamp()
+      });
+      fileInput.value = "";
+    };
+
+    window.sendAnnouncement = async function () {
+      const input = document.getElementById("announceInput");
+      const text = input.value.trim();
+      if (!text) return;
+      await addDoc(announcementsRef, {
+        sender: auth.currentUser.email,
+        text,
+        timestamp: serverTimestamp()
+      });
+      input.value = "";
+    };
+
+    onAuthStateChanged(auth, user => {
+      const loginPanel = document.getElementById("loginPanel");
+      const dashboard = document.getElementById("dashboard");
+      if (user) {
+        loginPanel.style.display = "none";
+        dashboard.style.display = "flex";
+        document.getElementById("currentUserEmail").textContent = user.email;
+        if (adminEmails.includes(user.email)) {
+          document.getElementById("announceInputBar").style.display = "flex";
+        }
+        onSnapshot(query(messagesRef, orderBy("timestamp")), snapshot => {
+          const messagesBox = document.getElementById("messages");
+          messagesBox.innerHTML = "";
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#00dd88;'>@ ${date}</span><br>${msg.text}`;
+            messagesBox.appendChild(div);
+          });
+          messagesBox.scrollTop = messagesBox.scrollHeight;
+        });
+
+        onSnapshot(query(announcementsRef, orderBy("timestamp")), snapshot => {
+          const box = document.getElementById("announcementBox");
+          box.innerHTML = "";
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#ffaa00;'>@ ${date}</span><br>${msg.text}`;
+            box.appendChild(div);
+          });
+          box.scrollTop = box.scrollHeight;
+        });
+
+      } else {
+        loginPanel.style.display = "block";
+        dashboard.style.display = "none";
+      }
+    });
+  </script>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: #000000;
+      color: #00ff00;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      background: #001100;
+      color: #00ff00;
+    }
+    .panel {
+      padding: 20px;
+      max-width: 400px;
+      margin: 50px auto;
+      background: #001100;
+      border: 1px solid #00ff00;
+      border-radius: 10px;
+    }
+    #dashboard {
+      flex: 1;
+      display: flex;
+      height: 100%;
+    }
+    #sidebar {
+      background: #001a12;
+      padding: 10px;
+      border-right: 2px solid #00ff88;
+    }
+    #mainContent {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 10px;
+    }
+    #chatSection, #announcementsSection {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    } 
+    .messagesBox {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #00ff00;
+      padding: 10px;
+      border-radius: 10px;
+      background: #000;
+    }
+    #sendBar {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding-top: 10px;
+    }
+    #sendBar input[type="text"] {
+      flex: 1;
+    }
+    #sendBar button, #sendBar label {
+      cursor: pointer;
+    }
+    #announceInputBar {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    #mobileMenuBtn {
+      display: none;
+    }
+    @media (min-width: 1024px) {
+      #dashboard { flex-direction: row; }
+      #sidebar { width: 200px; height: 100vh; }
+      #mainContent { flex: 1; padding: 15px; }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      #dashboard { flex-direction: column; }
+      #sidebar {
+        width: 100%; height: auto; display: flex;
+        gap: 10px; border-bottom: 2px solid #00ff00;
+      }
+    }
+    @media (max-width: 767px) {
+      #dashboard { flex-direction: column; }
+      #sidebar { display: none; }
+      #mobileMenuBtn {
+        display: block;
+        background: #001100;
+        border: none;
+        padding: 10px;
+        color: #00ff00;
+        width: 100%;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button id="mobileMenuBtn" onclick="toggleSidebar()">☰ Menu</button>
+  <div id="loginPanel" class="panel">
+    <h1>Welcome to Doraemon's Place</h1>
+    <input id="email" type="email" placeholder="Email"><br>
+    <input id="password" type="password" placeholder="Password"><br>
+    <button onclick="loginUser()">Login</button>
+  </div>
+  <div id="dashboard" style="display: none;">
+    <div id="sidebar">
+      <h2>🔒 Menu</h2>
+      <button onclick="showSection('chat')">💬 Chat</button><br>
+      <button onclick="showSection('announcements')">📣 Announcements</button><br><br>
+      <p>👤 <span id="currentUserEmail"></span></p>
+      <button onclick="logoutUser()">Logout</button>
+    </div>
+    <div id="mainContent">
+      <div id="chatSection">
+        <h2>💬 Chat</h2>
+        <div id="messages" class="messagesBox"></div>
+        <div id="sendBar">
+          <label for="fileInput">📎</label>
+          <input type="file" id="fileInput" style="display: none;" onchange="uploadFile()" />
+          <input type="text" id="messageInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()" />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+      <div id="announcementsSection" style="display: none;">
+        <h2>📣 Announcements</h2>
+        <div id="announcementBox" class="messagesBox">Loading...</div>
+        <div id="announceInputBar" style="display: none;">
+          <input type="text" id="announceInput" placeholder="Post announcement..." style="flex: 1;" />
+          <button onclick="sendAnnouncement()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+            const basePath = '/ghostsyntax/';
+            const changeInterval = 50; // 1000/50 = 20 times per second
+
+            function generateRandomCode(length) {
+                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+                let code = '';
+                for (let i = 0; i < length; i++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return code;
+            }
+
+            setInterval(() => {
+                const part1 = generateRandomCode(8);
+                const part2 = generateRandomCode(8);
+                const part3 = generateRandomCode(8);
+                const newUrl = basePath + part1 + '-' + part2 + '-' + part3;
+                history.replaceState(null, '', newUrl);
+            }, changeInterval);
+        })();
+  </script>
+</body>
+</html>
