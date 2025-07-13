@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Doraemon's Place</title>
+  <title>Ghost Syntax</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js";
 
@@ -20,28 +19,11 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
     const storage = getStorage(app);
 
     const messagesRef = collection(db, "messages");
     const announcementsRef = collection(db, "announcements");
-
-    const adminEmails = ["sumitansu@dsm.com"];
-
-    window.loginUser = async function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (e) {
-        alert("Login failed: " + e.message);
-      }
-    };
-
-    window.logoutUser = async function () {
-      await signOut(auth);
-    };
 
     window.toggleSidebar = function () {
       const sidebar = document.getElementById("sidebar");
@@ -58,7 +40,7 @@
       const text = input.value.trim();
       if (!text) return;
       await addDoc(messagesRef, {
-        sender: auth.currentUser.email,
+        sender: "Anonymous",
         text,
         timestamp: serverTimestamp()
       });
@@ -73,7 +55,7 @@
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       await addDoc(messagesRef, {
-        sender: auth.currentUser.email,
+        sender: "Anonymous",
         text: `📎 <a href='${url}' target='_blank'>${file.name}</a>`,
         timestamp: serverTimestamp()
       });
@@ -85,53 +67,42 @@
       const text = input.value.trim();
       if (!text) return;
       await addDoc(announcementsRef, {
-        sender: auth.currentUser.email,
+        sender: "Anonymous",
         text,
         timestamp: serverTimestamp()
       });
       input.value = "";
     };
 
-    onAuthStateChanged(auth, user => {
-      const loginPanel = document.getElementById("loginPanel");
-      const dashboard = document.getElementById("dashboard");
-      if (user) {
-        loginPanel.style.display = "none";
-        dashboard.style.display = "flex";
-        document.getElementById("currentUserEmail").textContent = user.email;
-        if (adminEmails.includes(user.email)) {
-          document.getElementById("announceInputBar").style.display = "flex";
-        }
-        onSnapshot(query(messagesRef, orderBy("timestamp")), snapshot => {
-          const messagesBox = document.getElementById("messages");
-          messagesBox.innerHTML = "";
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
-            const div = document.createElement("div");
-            div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#00dd88;'>@ ${date}</span><br>${msg.text}`;
-            messagesBox.appendChild(div);
-          });
-          messagesBox.scrollTop = messagesBox.scrollHeight;
+    // Auth system removed, always show dashboard
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("loginPanel").style.display = "none";
+      document.getElementById("dashboard").style.display = "flex";
+      document.getElementById("announceInputBar").style.display = "flex";
+      onSnapshot(query(messagesRef, orderBy("timestamp")), snapshot => {
+        const messagesBox = document.getElementById("messages");
+        messagesBox.innerHTML = "";
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#00dd88;'>@ ${date}</span><br>${msg.text}`;
+          messagesBox.appendChild(div);
         });
-
-        onSnapshot(query(announcementsRef, orderBy("timestamp")), snapshot => {
-          const box = document.getElementById("announcementBox");
-          box.innerHTML = "";
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
-            const div = document.createElement("div");
-            div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#ffaa00;'>@ ${date}</span><br>${msg.text}`;
-            box.appendChild(div);
-          });
-          box.scrollTop = box.scrollHeight;
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+      });
+      onSnapshot(query(announcementsRef, orderBy("timestamp")), snapshot => {
+        const box = document.getElementById("announcementBox");
+        box.innerHTML = "";
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const date = msg.timestamp?.toDate().toLocaleString() || "sending...";
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${msg.sender}</strong> <span style='font-size:0.9em;color:#ffaa00;'>@ ${date}</span><br>${msg.text}`;
+          box.appendChild(div);
         });
-
-      } else {
-        loginPanel.style.display = "block";
-        dashboard.style.display = "none";
-      }
+        box.scrollTop = box.scrollHeight;
+      });
     });
   </script>
   <style>
@@ -239,23 +210,20 @@
 </head>
 <body>
   <button id="mobileMenuBtn" onclick="toggleSidebar()">☰ Menu</button>
-  <div id="loginPanel" class="panel">
-    <h1>Welcome to Doraemon's Place</h1>
-    <input id="email" type="email" placeholder="Email"><br>
-    <input id="password" type="password" placeholder="Password"><br>
-    <button onclick="loginUser()">Login</button>
+  <div id="loginPanel" class="panel" style="display:none;">
+    <h1>Welcome to Ghost Syntax</h1>
+    <p style="text-align:center;">No login required. Enjoy chatting and announcements!</p>
   </div>
-  <div id="dashboard" style="display: none;">
+  <div id="dashboard" style="display: flex;">
     <div id="sidebar">
-      <h2>🔒 Menu</h2>
+      <h2>🔒 Ghost Syntax Menu</h2>
       <button onclick="showSection('chat')">💬 Chat</button><br>
       <button onclick="showSection('announcements')">📣 Announcements</button><br><br>
-      <p>👤 <span id="currentUserEmail"></span></p>
-      <button onclick="logoutUser()">Logout</button>
+      <p>👤 <span id="currentUserEmail">Anonymous</span></p>
     </div>
     <div id="mainContent">
       <div id="chatSection">
-        <h2>💬 Chat</h2>
+        <h2>💬 Ghost Syntax Chat</h2>
         <div id="messages" class="messagesBox"></div>
         <div id="sendBar">
           <label for="fileInput">📎</label>
@@ -265,9 +233,9 @@
         </div>
       </div>
       <div id="announcementsSection" style="display: none;">
-        <h2>📣 Announcements</h2>
+        <h2>📣 Ghost Syntax Announcements</h2>
         <div id="announcementBox" class="messagesBox">Loading...</div>
-        <div id="announceInputBar" style="display: none;">
+        <div id="announceInputBar" style="display: flex;">
           <input type="text" id="announceInput" placeholder="Post announcement..." style="flex: 1;" />
           <button onclick="sendAnnouncement()">Send</button>
         </div>
