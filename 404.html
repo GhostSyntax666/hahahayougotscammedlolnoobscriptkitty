@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | Ghost Syntax</title>
+  <style>
+    body {
+      background: #1a0000;
+      color: #ff2222;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .matrix-bg {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .matrix-rain {
+      position: absolute;
+      color: #ff2222;
+      font-size: 2.2em;
+      line-height: 16px;
+      text-shadow: 0 0 16px #ff0000, 0 0 32px #ff2222;
+      animation: matrix-fall 3s linear infinite;
+      opacity: 0.7;
+    }
+    @keyframes matrix-fall {
+      0% { transform: translateY(-100vh); opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    .error-container {
+      position: relative;
+      z-index: 2;
+      background: rgba(40, 0, 0, 0.85);
+      border: 2px solid #ff2222;
+      border-radius: 10px;
+      box-shadow: 0 0 30px #ff222244;
+      padding: 40px 30px 30px 30px;
+      min-width: 320px;
+      text-align: center;
+    }
+    .error-title {
+      font-size: 3em;
+      font-weight: bold;
+      text-shadow: 0 0 10px #ff2222, 0 0 30px #ff0000;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #ff2222; }
+      to { text-shadow: 0 0 30px #ff0000, 0 0 40px #ff2222; }
+    }
+    .error-message {
+      font-size: 1.2em;
+      margin-bottom: 25px;
+      color: #ff2222;
+      text-shadow: 0 0 10px #ff0000;
+    }
+    .home-btn {
+      background: linear-gradient(45deg, #000, #0a0a0a);
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1em;
+      padding: 12px 30px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+      box-shadow: 0 0 10px #00ff0033;
+    }
+    .home-btn:hover {
+      background: #0a0a0a;
+      box-shadow: 0 0 20px #00ff00;
+      color: #fff;
+    }
+    .terminal-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: #ff2222;
+      animation: blink 1s infinite;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    @media (max-width: 600px) {
+      .error-title { font-size: 2em; }
+      .error-container { min-width: 0; padding: 20px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="matrix-bg" id="matrixBg"></div>
+  <div class="error-container">
+    <div class="error-title">404 ERROR <span class="terminal-cursor"></span></div>
+    <div class="error-message">Tracker lost.<br>Signal terminated.<br>You are off the grid.</div>
+  </div>
+  <script>
+    // Matrix Rain Effect (ACCESS DENIED)
+    (function createMatrixRain() {
+      const matrixBg = document.getElementById('matrixBg');
+      for (let i = 0; i < 60; i++) {
+        const rain = document.createElement('div');
+        rain.className = 'matrix-rain';
+        rain.style.left = Math.random() * 100 + '%';
+        rain.style.animationDelay = Math.random() * 1.5 + 's';
+        rain.style.animationDuration = (Math.random() * 1.5 + 1.2) + 's';
+        rain.style.opacity = 0.5 + Math.random() * 0.4;
+        rain.innerHTML = '<b>ACCESS DENIED</b>';
+        matrixBg.appendChild(rain);
+      }
+    })();
+  </script>
+</body>
+</html>
